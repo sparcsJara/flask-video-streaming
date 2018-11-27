@@ -33,7 +33,7 @@ class Camera(BaseCamera):
         self.change_lock()
         print("change configuration")
         self.change_resolution(int(res_x), int(res_y))
-        self.change_frame_rate(framerate)
+        self.change_frame_rate(int(framerate))
         BaseCamera.__init__(self)
 
 
