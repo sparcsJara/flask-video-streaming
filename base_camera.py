@@ -18,6 +18,7 @@ class CameraEvent(object):
 
     def wait(self):
         """Invoked from each client's thread to wait for the next frame."""
+
         ident = get_ident()
         if ident not in self.events:
             # this is a new client
@@ -56,32 +57,46 @@ class BaseCamera(object):
     frame = None  # current frame is stored here by background thread
     last_access = 0  # time of last client access to the camera
     event = CameraEvent()
+    changing = False
+    resolution = (1280, 1024)
+    framerate = 15
 
     def __init__(self):
         """Start the background camera thread if it isn't running yet."""
         if BaseCamera.thread is None:
             BaseCamera.last_access = time.time()
-
+            print("init")
+            print(BaseCamera.resolution)
             # start background frame thread
             BaseCamera.thread = threading.Thread(target=self._thread)
             BaseCamera.thread.start()
 
             # wait until frames are available
+
             while self.get_frame() is None:
                 time.sleep(0)
 
     def get_frame(self):
         """Return the current camera frame."""
-        BaseCamera.last_access = time.time()
 
+        BaseCamera.last_access = time.time()
         # wait for a signal from the camera thread
         BaseCamera.event.wait()
         BaseCamera.event.clear()
 
         return BaseCamera.frame
 
+    def change_lock(self):
+        BaseCamera.changing = (BaseCamera.changing != True)
+
+    def change_resolution(self, res_x, res_y):
+        BaseCamera.resolution = (res_x,res_y)
+
+    def change_frame_rate(self, framerate):
+        BaseCamera.framerate = framerate
+
     @staticmethod
-    def frames():
+    def frames(resolution, framerate):
         """"Generator that returns frames from the camera."""
         raise RuntimeError('Must be implemented by subclasses.')
 
@@ -89,16 +104,16 @@ class BaseCamera(object):
     def _thread(cls):
         """Camera background thread."""
         print('Starting camera thread.')
-        frames_iterator = cls.frames()
+        frames_iterator = cls.frames(BaseCamera.resolution, BaseCamera.framerate)
         for frame in frames_iterator:
             BaseCamera.frame = frame
             BaseCamera.event.set()  # send signal to clients
             time.sleep(0)
-
             # if there hasn't been any clients asking for frames in
             # the last 10 seconds then stop the thread
-            if time.time() - BaseCamera.last_access > 10:
+        
+            if BaseCamera.changing == True:
                 frames_iterator.close()
-                print('Stopping camera thread due to inactivity.')
+                print("configuration chagned")
                 break
         BaseCamera.thread = None
