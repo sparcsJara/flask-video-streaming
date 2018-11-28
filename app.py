@@ -2,6 +2,7 @@
 from importlib import import_module
 import os
 from flask import Flask, render_template, Response, request
+import time
 
 # import camera driver
 if os.environ.get('CAMERA'):
@@ -36,6 +37,8 @@ def config_change():
             frame_rate = request.form.get('frame_rate')
             resolution_x = request.form.get('resolution_x')
             resolution_y = request.form.get('resolution_y')
+            camNum = request.form.get('camNum')
+            print("camNum:" + camNum +", time:"+str(time.time()))
             camera.change_configuration(resolution_x, resolution_y, frame_rate)
             # cv2.imwrite(os.pathfind .join(path, "img", name), image)
             # wriitenToDir = HomeSurveillance.add_face(name, image, upload=True)
